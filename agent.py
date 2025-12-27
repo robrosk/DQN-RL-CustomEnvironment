@@ -1,10 +1,11 @@
+import random
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense, Input
-from tensorflow.keras.losses import MeanSquaredError
+from tensorflow.keras.losses import Huber
 from tensorflow.keras.optimizers import Adam
-import random
 
 from replay_buffer import ReplayBuffer
 
@@ -59,12 +60,15 @@ class DQNAgent:
         """
         model = Sequential([
             Input(shape=(self.state_size,)),
-            Dense(64, activation='relu'),
-            Dense(64, activation='relu'),
+            Dense(128, activation='relu'),
+            Dense(128, activation='relu'),
             Dense(self.action_size, activation='linear')
         ])
-        
-        model.compile(loss=MeanSquaredError(), optimizer=Adam(learning_rate=self.learning_rate))
+
+        model.compile(
+            loss=Huber(),
+            optimizer=Adam(learning_rate=self.learning_rate, clipnorm=1.0)
+        )
         return model
     
     def update_target_network(self):
@@ -112,16 +116,18 @@ class DQNAgent:
         
         # Calculate target Q values from target network
         target_q = np.copy(current_q)
-        
-        # Get next Q values from target network
-        next_q = self.target_q_network.predict(next_states, verbose=0)
-        
-        # Update target Q values based on Bellman equation
+
+        # Get next Q values from target and primary network for Double DQN
+        next_q_target = self.target_q_network.predict(next_states, verbose=0)
+        next_actions = np.argmax(self.q_network.predict(next_states, verbose=0), axis=1)
+
+        # Update target Q values based on Double DQN Bellman equation
         for i in range(self.batch_size):
             if dones[i]:
                 target_q[i, actions[i]] = rewards[i]
             else:
-                target_q[i, actions[i]] = rewards[i] + self.gamma * np.max(next_q[i])
+                best_next = next_q_target[i, next_actions[i]]
+                target_q[i, actions[i]] = rewards[i] + self.gamma * best_next
         
         # Train the network
         self.q_network.fit(states, target_q, epochs=1, verbose=0)
@@ -179,8 +185,8 @@ class DQNAgent:
                 self.q_network.load_weights(filename)
         
         self.q_network.compile(
-            loss=MeanSquaredError(), 
-            optimizer=Adam(learning_rate=self.learning_rate)
+            loss=Huber(),
+            optimizer=Adam(learning_rate=self.learning_rate, clipnorm=1.0)
         )
         
         self.update_target_network() 

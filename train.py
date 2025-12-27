@@ -1,11 +1,12 @@
-import numpy as np
-import matplotlib.pyplot as plt
 import argparse
 import os
+
+import matplotlib.pyplot as plt
+import numpy as np
 from tqdm import tqdm
 
-from environment import Environment
 from agent import DQNAgent
+from environment import Environment
 
 def plot_training_rewards(rewards, avg_window=100, filename=None):
     """Plot the rewards per episode during training.
@@ -39,7 +40,14 @@ def train(args):
         args: Command line arguments
     """
     # Create the environment
-    env = Environment()
+    env = Environment(
+        grid_size=args.grid_size,
+        hole_prob=args.hole_prob,
+        slip_prob=args.slip_prob,
+        randomize_on_reset=not args.static_map,
+        min_path_length_ratio=args.min_path_ratio,
+        seed=args.seed,
+    )
     
     # Create the agent
     agent = DQNAgent(
@@ -112,12 +120,19 @@ def train(args):
 
 def test(args):
     """Test a trained DQN agent on the Frozen Lake environment.
-    
+
     Args:
         args: Command line arguments
     """
     # Create the environment
-    env = Environment()
+    env = Environment(
+        grid_size=args.grid_size,
+        hole_prob=args.hole_prob,
+        slip_prob=args.slip_prob,
+        randomize_on_reset=not args.static_map,
+        min_path_length_ratio=args.min_path_ratio,
+        seed=args.seed,
+    )
     
     # Create the agent
     agent = DQNAgent(
@@ -141,7 +156,7 @@ def test(args):
         total_reward = 0
         
         print(f"Episode {episode+1}/{n_episodes}")
-        print(env.render())
+        print(env.render_text())
         
         for step in range(max_steps):
             # Get action from agent (no exploration during testing)
@@ -153,7 +168,7 @@ def test(args):
             next_state = env.state_to_one_hot(next_state_tuple)
             
             print(f"Action: {action}, State: {next_state_tuple}, Reward: {reward}")
-            print(env.render())
+            print(env.render_text())
             
             # Update state and total reward
             state = next_state
@@ -174,7 +189,7 @@ def test(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train or test a DQN agent on Frozen Lake.")
-    
+
     # Training parameters
     parser.add_argument("--episodes", type=int, default=1000, help="Number of training episodes")
     parser.add_argument("--max-steps", type=int, default=100, help="Maximum steps per episode")
@@ -185,15 +200,32 @@ if __name__ == "__main__":
     parser.add_argument("--epsilon-min", type=float, default=0.01, help="Minimum exploration rate")
     parser.add_argument("--batch-size", type=int, default=64, help="Batch size for training")
     parser.add_argument("--update-target-every", type=int, default=100, help="Update target network every N steps")
-    
+
+    # Environment parameters
+    parser.add_argument("--grid-size", type=int, default=4, help="Size of the frozen lake grid")
+    parser.add_argument("--hole-prob", type=float, default=0.2, help="Probability of a hole in each cell")
+    parser.add_argument("--slip-prob", type=float, default=0.2, help="Probability of slipping to a random move")
+    parser.add_argument(
+        "--min-path-ratio",
+        type=float,
+        default=1.25,
+        help="Shortest-path length must exceed grid_size * ratio to keep maps challenging",
+    )
+    parser.add_argument(
+        "--static-map",
+        action="store_true",
+        help="Use a single generated map for all episodes instead of regenerating on reset",
+    )
+    parser.add_argument("--seed", type=int, default=None, help="Random seed for reproducibility")
+
     # Testing parameters
     parser.add_argument("--test", action="store_true", help="Test the agent instead of training")
     parser.add_argument("--model", type=str, default="models/dqn_final.h5", help="Model file to load for testing")
     parser.add_argument("--test-episodes", type=int, default=5, help="Number of test episodes")
-    
+
     args = parser.parse_args()
-    
+
     if args.test:
         test(args)
     else:
-        train(args) 
+        train(args)

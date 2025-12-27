@@ -3,4 +3,5 @@ matplotlib>=3.3.0
 tensorflow
 tqdm>=4.50.0
 Pillow>=8.0.0
+pygame>=2.0.0
 
