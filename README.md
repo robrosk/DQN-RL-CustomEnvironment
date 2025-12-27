@@ -1,12 +1,12 @@
 # Frozen Lake Reinforcement Learning
 
-This project implements a Deep Q-Network (DQN) agent to solve the Frozen Lake environment. The environment consists of a 4x4 grid where the agent needs to navigate from the start position to the goal while avoiding holes.
+This project implements a Deep Q-Network (DQN) agent to solve the Frozen Lake environment. The environment now supports procedurally generated grids so the agent can generalize across many different lakes instead of memorizing a single layout.
 
 The original implementation was developed in Jupyter notebooks. The code has since been refactored into Python modules with proper classes for improved modularity and reusability.
 
 ## Project Structure
 
-- `environment.py`: Contains the Environment class for the Frozen Lake environment
+- `environment.py`: Contains the Environment class for solvable, randomly generated Frozen Lake maps
 - `replay_buffer.py`: Implements the ReplayBuffer class for experience replay
 - `agent.py`: Defines the DQNAgent class with the neural network for Q-learning
 - `train.py`: Contains training and testing logic
@@ -15,9 +15,10 @@ The original implementation was developed in Jupyter notebooks. The code has sin
 ## Features
 
 - Deep Q-Network (DQN) implementation with TensorFlow
-- Custom environment built from scratch
+- Custom environment built from scratch with on-reset map randomization
 - Experience replay for efficient learning
 - Target network for stable training
+ - Optional pygame visualization for a game-like view
 
 ## Installation
 
@@ -61,6 +62,14 @@ Training parameters:
 - `--batch-size`: Batch size for training (default: 64)
 - `--update-target-every`: Update target network every N steps (default: 100)
 
+Environment parameters:
+- `--grid-size`: Size of the square grid (default: 4)
+- `--hole-prob`: Probability of placing a hole in each non-terminal cell (default: 0.2)
+- `--slip-prob`: Probability of slipping to a random move (default: 0.2)
+- `--min-path-ratio`: Enforce a minimum shortest-path length relative to grid size to keep maps challenging (default: 1.25)
+- `--static-map`: Use a single generated map for all episodes (by default a fresh map is generated each reset)
+- `--seed`: Optional random seed for reproducibility
+
 The trained model will be saved to `models/dqn_final.h5`.
 
 ### Testing
@@ -85,7 +94,7 @@ The Frozen Lake environment is a 4x4 grid:
 - H: Hole (terminates episode with negative reward)
 - G: Goal (terminates episode with positive reward)
 
-It's a stochastic environment, where the agent has a 20% chance of slipping to a random direction regardless of the chosen action.
+It's a stochastic environment, where the agent has a configurable chance of slipping to a random direction regardless of the chosen action. The map is regenerated to remain solvable while meeting a minimum difficulty threshold.
 
 ## Agent
 
