@@ -49,6 +49,7 @@ class Environment:
         self._generate_grid()
         self.n_rows, self.n_cols = self.state_grid.shape
         self.n_states = self.n_rows * self.n_cols
+        self.obs_size = self._compute_obs_size()
 
     # ------------------------------------------------------------------
     # Map generation
@@ -141,6 +142,7 @@ class Environment:
 
         self.state = (0, 0)
         self.done = False
+        self.obs_size = self._compute_obs_size()
         return self.state
 
     def step(self, action: int):
@@ -183,8 +185,19 @@ class Environment:
         return one_hot
 
     def state_to_one_hot(self, state: Tuple[int, int]) -> np.ndarray:
+        """Return observation = one-hot map layout + agent position one-hot."""
+
+        map_one_hot = np.eye(4, dtype=np.float32)[self.state_grid.flatten()]
+        map_flat = map_one_hot.reshape(-1)
+
         row, col = state
-        return self.pos_to_one_hot(row, col)
+        pos_features = self.pos_to_one_hot(row, col)
+
+        return np.concatenate([map_flat, pos_features]).astype(np.float32)
+
+    def _compute_obs_size(self) -> int:
+        """Observation size when encoding full map (4 classes) + position."""
+        return (self.n_states * 4) + self.n_states
 
     # ------------------------------------------------------------------
     # Rendering

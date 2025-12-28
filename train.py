@@ -51,7 +51,7 @@ def train(args):
     
     # Create the agent
     agent = DQNAgent(
-        state_size=env.n_states,
+        state_size=env.obs_size,
         action_size=env.n_actions,
         learning_rate=args.learning_rate,
         gamma=args.gamma,
@@ -136,7 +136,7 @@ def test(args):
     
     # Create the agent
     agent = DQNAgent(
-        state_size=env.n_states,
+        state_size=env.obs_size,
         action_size=env.n_actions
     )
     
